@@ -113,6 +113,7 @@ impl Div for FieldElement {
     type Output = FieldElement;
 
     fn div(self, rhs: Self) -> Self::Output {
+        assert_ne!(0, rhs.num, "Zero is not a valid divisor!");
         self * rhs.pow(self.prime - 2)
     }
 }
