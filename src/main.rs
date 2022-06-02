@@ -1,4 +1,4 @@
-use programmingbitcoin::{FieldElement, FieldElementError};
+use programmingbitcoin::finite_field::field_element::{FieldElement, FieldElementError};
 
 fn main() -> Result<(), FieldElementError> {
     // Exercise 2:
