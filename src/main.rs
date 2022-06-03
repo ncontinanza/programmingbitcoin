@@ -58,33 +58,36 @@ fn main() {
 
     assert_eq!(a.pow(-4) * b, FieldElement::new(13, 31).unwrap());
 
-    // CHAPTER 2: Elliptic Curves
-
-    let _p1 = Point::new(-1.0, -1.0, 5.0, 7.0);
-    let _p2 = Point::new(-1.0, -2.0, 5.0, 7.0);
-
-    // Exercise 1
-    let p1 = Point::new(2.0, 4.0, 5.0, 7.0);
-    let p2 = Point::new(-1.0, -1.0, 5.0, 7.0);
-    let p3 = Point::new(18.0, 77.0, 5.0, 7.0);
-    let p4 = Point::new(5.0, 7.0, 5.0, 7.0);
-
-    println!("p1 is on the curve? {}", p1.is_ok());
-    println!("p2 is on the curve? {}", p2.is_ok());
-    println!("p3 is on the curve? {}", p3.is_ok());
-    println!("p4 is on the curve? {}", p4.is_ok());
-
-    // Exercise 4
-    let p1 = Point::new(2.0, 5.0, 5.0, 7.0).unwrap();
-    let p2 = Point::new(-1.0, -1.0, 5.0, 7.0).unwrap();
-
-    assert_eq!(p1 + p2, Point::new(3.0, -7.0, 5.0, 7.0).unwrap());
-
-    // Exercise 6
-    let p1 = Point::new(-1.0, -1.0, 5.0, 7.0).unwrap();
-
-    assert_eq!(p1 + p1, Point::new(18.0, 77.0, 5.0, 7.0).unwrap());
-
     // CHAPTER 3: Elliptic Curve Cryptography
-    
+    let x1 = FieldElement::new(170, 223).unwrap();
+    let y1 = FieldElement::new(142, 223).unwrap();
+
+    let x2 = FieldElement::new(60, 223).unwrap();
+    let y2 = FieldElement::new(139, 223).unwrap();
+
+    let p1 = Point::new(
+        x1,
+        y1,
+        FieldElement::new(0, 223).unwrap(),
+        FieldElement::new(7, 223).unwrap(),
+    )
+    .unwrap();
+    let p2 = Point::new(
+        x2,
+        y2,
+        FieldElement::new(0, 223).unwrap(),
+        FieldElement::new(7, 223).unwrap(),
+    )
+    .unwrap();
+
+    assert_eq!(
+        p1 + p2,
+        Point::new(
+            FieldElement::new(220, 223).unwrap(),
+            FieldElement::new(181, 223).unwrap(),
+            FieldElement::new(0, 223).unwrap(),
+            FieldElement::new(7, 223).unwrap()
+        )
+        .unwrap()
+    );
 }

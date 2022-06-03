@@ -1,11 +1,13 @@
-use std::{f32::INFINITY, ops::Add};
+use std::ops::Add;
+
+use crate::finite_field::field_element::FieldElement;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Point {
-    a: f32,
-    b: f32,
-    x: f32,
-    y: f32,
+    a: FieldElement,
+    b: FieldElement,
+    x: FieldElement,
+    y: FieldElement,
 }
 
 #[derive(Debug)]
@@ -14,12 +16,15 @@ pub enum PointError {
 }
 
 impl Point {
-    pub fn new(x: f32, y: f32, a: f32, b: f32) -> Result<Point, PointError> {
-        if x == INFINITY && y == INFINITY {
-            return Ok(Point { a, b, x, y });
-        }
-
-        if y.powf(2.0) != x.powf(3.0) + a * x + b {
+    pub fn new(
+        x: FieldElement,
+        y: FieldElement,
+        a: FieldElement,
+        b: FieldElement,
+    ) -> Result<Point, PointError> {
+        if y.pow(2) != x.pow(3) + a * x + b {
+            println!("y**2 = {}", y.pow(2));
+            println!("lo otro = {}", x.pow(3) + a * x + b);
             return Err(PointError::PointNotInCurve(format!(
                 "({}, {}) is not on the curve",
                 x, y,
@@ -39,34 +44,17 @@ impl Add for Point {
                 format!("Points {:?}, {:?} are not on the same curve.", self, rhs)
             );
         }
-        let infinity = Point {
-            a: self.a,
-            b: self.b,
-            x: INFINITY,
-            y: INFINITY,
-        };
-        if self.x == INFINITY {
-            return rhs;
-        }
-        if rhs.x == INFINITY {
-            return self;
-        }
-        if self.x == rhs.x && self.y != rhs.y {
-            return infinity;
-        }
 
         let x_sum;
         let y_sum;
         if self == rhs {
-            if self.y == 0.0 {
-                return infinity;
-            }
-            let slope = (3.0 * self.x.powf(2.0) + self.a) / (2.0 * self.y);
-            x_sum = slope.powf(2.0) - self.x - rhs.x;
+            let slope = (FieldElement::new(3, self.a.prime()).unwrap() * self.x.pow(2) + self.a)
+                / (FieldElement::new(2, self.a.prime()).unwrap() * self.y);
+            x_sum = slope.pow(2) - self.x - rhs.x;
             y_sum = slope * (self.x - x_sum) - self.y;
         } else {
             let slope = (rhs.y - self.y) / (rhs.x - self.x);
-            x_sum = slope.powf(2.0) - self.x - rhs.x;
+            x_sum = slope.pow(2) - self.x - rhs.x;
             y_sum = slope * (self.x - x_sum) - self.y;
         }
 
@@ -84,28 +72,49 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_add0() {
-        let a = Point::new(INFINITY, INFINITY, 5.0, 7.0).unwrap();
-        let b = Point::new(2.0, 5.0, 5.0, 7.0).unwrap();
-        let c = Point::new(2.0, -5.0, 5.0, 7.0).unwrap();
+    fn test_on_curve() {
+        let prime = 223;
+        let a = 0;
+        let b = 7;
 
-        assert_eq!(a + b, b);
-        assert_eq!(b + a, b);
-        assert_eq!(b + c, a);
+        assert!(point(192, 105, a, b, prime).is_ok());
+        assert!(point(17, 56, a, b, prime).is_ok());
+        assert!(point(200, 119, a, b, prime).is_err());
+        assert!(point(1, 193, a, b, prime).is_ok());
+        assert!(point(42, 99, a, b, prime).is_err());
     }
 
     #[test]
-    fn test_add1() {
-        let a = Point::new(3.0, 7.0, 5.0, 7.0).unwrap();
-        let b = Point::new(-1.0, -1.0, 5.0, 7.0).unwrap();
+    fn test_add() {
+        let prime = 223;
+        let a = 0;
+        let b = 7;
 
-        assert_eq!(a + b, Point::new(2.0, -5.0, 5.0, 7.0).unwrap());
+        let p1 = point(192, 105, a, b, prime).unwrap();
+        let p2 = point(17, 56, a, b, prime).unwrap();
+        let p3 = point(170, 142, a, b, prime).unwrap();
+
+        assert_eq!(p1 + p2, p3);
+
+        let p1 = point(47, 71, a, b, prime).unwrap();
+        let p2 = point(117, 141, a, b, prime).unwrap();
+        let p3 = point(60, 139, a, b, prime).unwrap();
+
+        assert_eq!(p1 + p2, p3);
+
+        let p1 = point(143, 98, a, b, prime).unwrap();
+        let p2 = point(76, 66, a, b, prime).unwrap();
+        let p3 = point(47, 71, a, b, prime).unwrap();
+
+        assert_eq!(p1 + p2, p3);
     }
 
-    #[test]
-    fn test_add2() {
-        let a = Point::new(-1.0, -1.0, 5.0, 7.0).unwrap();
-
-        assert_eq!(a + a, Point::new(18.0, 77.0, 5.0, 7.0).unwrap());
+    fn point(x: i128, y: i128, a: i128, b: i128, prime: i128) -> Result<Point, PointError> {
+        Point::new(
+            FieldElement::new(x, prime).unwrap(),
+            FieldElement::new(y, prime).unwrap(),
+            FieldElement::new(a, prime).unwrap(),
+            FieldElement::new(b, prime).unwrap(),
+        )
     }
 }

@@ -41,6 +41,10 @@ impl FieldElement {
             prime: self.prime,
         }
     }
+
+    pub fn prime(self) -> i128 {
+        self.prime
+    }
 }
 
 impl fmt::Display for FieldElement {
