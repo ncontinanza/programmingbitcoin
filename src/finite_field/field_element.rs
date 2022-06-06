@@ -1,7 +1,7 @@
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct FieldElement {
     num: i128,
     prime: i128,
@@ -117,6 +117,11 @@ impl Div for FieldElement {
     type Output = FieldElement;
 
     fn div(self, rhs: Self) -> Self::Output {
+        assert_eq!(
+            self.prime, rhs.prime,
+            "Cannot divide two numbers in different fields"
+        );
+
         assert_ne!(0, rhs.num, "Zero is not a valid divisor!");
         self * rhs.pow(self.prime - 2)
     }
