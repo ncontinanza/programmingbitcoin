@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{ Add, Mul };
 
 use crate::finite_field::field_element::FieldElement;
 
@@ -35,10 +35,6 @@ impl Point {
             x: Some(x),
             y: Some(y),
         })
-    }
-
-    pub fn rmul(self, coefficient: i32) -> Self {
-        self
     }
 
     pub fn infinity(a: FieldElement, b: FieldElement) -> Point {
@@ -110,6 +106,25 @@ impl Add for Point {
     }
 }
 
+impl Mul<Point> for i128 {
+    type Output = Point;
+
+    fn mul(self, point: Point) -> Self::Output {
+        let mut coef = self;
+        let mut current = point;
+        let mut result = Point::infinity(point.a, point.b);
+
+        while coef > 0 {
+            if coef % 2 != 0 {
+                result = result + current; // TODO: fix when MulAssign is implemented
+            }
+            current = current + current; // TODO: fix when AddAssign is implemented
+            coef >>= 1;
+        }
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -152,6 +167,17 @@ mod tests {
         assert_eq!(p1 + p2, p3);
     }
 
+    #[test]
+    fn test_mul() {
+        let prime = 223;
+        let a = 0;
+        let b = 7;
+
+        let p1 = point(170, 142, a, b, prime).unwrap();
+        assert_eq!(p1 + p1, 2 * p1);
+        assert_eq!(2 * p1 + p1, 3 * p1);
+    }
+    
     fn point(x: i128, y: i128, a: i128, b: i128, prime: i128) -> Result<Point, PointError> {
         Point::new(
             FieldElement::new(x, prime).unwrap(),
