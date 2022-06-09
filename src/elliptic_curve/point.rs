@@ -1,8 +1,10 @@
 use std::ops::{ Add, Mul };
 
+use rug::Integer;
+
 use crate::finite_field::field_element::FieldElement;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct Point {
     a: FieldElement,
     b: FieldElement,
@@ -22,7 +24,7 @@ impl Point {
         a: FieldElement,
         b: FieldElement,
     ) -> Result<Point, PointError> {
-        if y.pow(2) != x.pow(3) + a * x + b {
+        if y.pow(&Integer::from(2i32)) != x.pow(&Integer::from(3i32)) + a * x + b {
             return Err(PointError::PointNotInCurve(format!(
                 "({}, {}) is not on the curve",
                 x, y,
@@ -74,7 +76,7 @@ impl Add for Point {
                 let x_sum;
                 let y_sum;
                 if self == rhs {
-                    if *y1 == FieldElement::new(0, y1.prime()).unwrap() {
+                    if *y1 == FieldElement::new(Integer::from(0i32), y1.prime()).unwrap() {
                         return Point {
                             x: None,
                             y: None,
@@ -82,14 +84,14 @@ impl Add for Point {
                             b: self.b,
                         };
                     }
-                    let slope = (FieldElement::new(3, self.a.prime()).unwrap() * x1.pow(2)
+                    let slope = (FieldElement::new(Integer::from(3i32), self.a.prime()).unwrap() * x1.pow(&Integer::from(2i32))
                         + self.a)
-                        / (FieldElement::new(2, self.a.prime()).unwrap() * *y1);
-                    x_sum = slope.pow(2) - *x1 - *x2;
+                        / (FieldElement::new(Integer::from(2i32), self.a.prime()).unwrap() * *y1);
+                    x_sum = slope.pow(&Integer::from(2i32)) - *x1 - *x2;
                     y_sum = slope * (*x1 - x_sum) - *y1;
                 } else {
                     let slope = (*y2 - *y1) / (*x2 - *x1);
-                    x_sum = slope.pow(2) - *x1 - *x2;
+                    x_sum = slope.pow(&Integer::from(2i32)) - *x1 - *x2;
                     y_sum = slope * (*x1 - x_sum) - *y1;
                 }
 
@@ -177,7 +179,7 @@ mod tests {
         assert_eq!(p1 + p1, 2 * p1);
         assert_eq!(2 * p1 + p1, 3 * p1);
     }
-    
+
     fn point(x: i128, y: i128, a: i128, b: i128, prime: i128) -> Result<Point, PointError> {
         Point::new(
             FieldElement::new(x, prime).unwrap(),

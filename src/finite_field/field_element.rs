@@ -1,10 +1,11 @@
 use std::fmt;
 use std::ops::{Add, Div, Mul, Neg, Sub};
+use rug::Integer;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct FieldElement {
-    num: i128,
-    prime: i128,
+    num: Integer,
+    prime: Integer,
 }
 
 #[derive(PartialEq, Debug)]
@@ -14,7 +15,7 @@ pub enum FieldElementError {
 }
 
 impl FieldElement {
-    pub fn new(num: i128, prime: i128) -> Result<FieldElement, FieldElementError> {
+    pub fn new(num: Integer, prime: Integer) -> Result<FieldElement, FieldElementError> {
         if num >= prime || num < 0 {
             return Err(FieldElementError::FieldRangeError(format!(
                 "Num {} not in field range 0 to {}",
@@ -26,8 +27,8 @@ impl FieldElement {
         Ok(FieldElement { num, prime })
     }
 
-    pub fn pow(self, exp: i128) -> FieldElement {
-        let mut n = exp.rem_euclid(self.prime - 1) as u32;
+    /*pub fn pow(&self, exp: &Integer) -> FieldElement {
+        let mut n = exp.rem_euclid(self.prime - 1i32) as u32;
 
         let mut num = 1;
 
@@ -40,10 +41,32 @@ impl FieldElement {
             num,
             prime: self.prime,
         }
+    }*/
+
+    pub fn pow(&self, exp: &Integer) -> FieldElement {
+        if self.prime == Integer::from(1i32) {
+            return FieldElement { num: Integer::from(0i32), prime: self.prime.clone() }
+        } else {
+            if let Some(result) = self.num.pow_mod_ref(exp, &self.prime) {
+                FieldElement { num: Integer::from(result), prime: self.prime }
+            } else {
+                unreachable!()
+            }
+        }
     }
 
-    pub fn prime(self) -> i128 {
+    pub fn prime(self) -> Integer {
         self.prime
+    }
+
+    fn value_of(&self, value: Integer) -> Integer {
+        if value < Integer::from(0) || value >= self.prime {
+            let result = value.div_rem_euc_ref(&self.prime);
+            let (_, normalized_value) = <(Integer, Integer)>::from(result);
+            normalized_value
+        } else {
+            value
+        }
     }
 }
 
@@ -61,11 +84,17 @@ impl Add for FieldElement {
             self.prime, rhs.prime,
             "Cannot add two numbers in different fields"
         );
+        let sum = self.num + rhs.num;
+        if sum < Integer::from(0i32) || sum >= self.prime {
+            FieldElement { num: self.value_of(sum), prime: self.prime }
 
-        FieldElement {
-            num: (self.num + rhs.num).rem_euclid(self.prime),
-            prime: self.prime,
+        } else {
+            FieldElement {
+                num: Integer::from(sum),
+                prime: self.prime,
+            }    
         }
+
     }
 }
 
@@ -79,7 +108,7 @@ impl Sub for FieldElement {
         );
 
         FieldElement {
-            num: (self.num - rhs.num).rem_euclid(self.prime),
+            num: self.value_of(self.num - rhs.num),
             prime: self.prime,
         }
     }
@@ -90,7 +119,7 @@ impl Neg for FieldElement {
 
     fn neg(self) -> Self::Output {
         let zero = FieldElement {
-            num: 0,
+            num: Integer::from(0i32),
             prime: self.prime,
         };
         zero - self
@@ -107,7 +136,7 @@ impl Mul for FieldElement {
         );
 
         FieldElement {
-            num: (self.num * rhs.num).rem_euclid(self.prime),
+            num: self.value_of(self.num * rhs.num),
             prime: self.prime,
         }
     }
@@ -122,8 +151,8 @@ impl Div for FieldElement {
             "Cannot divide two numbers in different fields"
         );
 
-        assert_ne!(0, rhs.num, "Zero is not a valid divisor!");
-        self * rhs.pow(self.prime - 2)
+        assert_ne!(Integer::from(0i32), rhs.num, "Zero is not a valid divisor!");
+        self * rhs.pow(&(self.prime - Integer::from(2i32)))
     }
 }
 
@@ -133,9 +162,9 @@ mod tests {
 
     #[test]
     fn test_ne() {
-        let a = FieldElement::new(2, 31).unwrap();
-        let b = FieldElement::new(2, 31).unwrap();
-        let c = FieldElement::new(15, 31).unwrap();
+        let a = FieldElement::new(Integer::from(2i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(2i32), Integer::from(31i32)).unwrap();
+        let c = FieldElement::new(Integer::from(15i32), Integer::from(31i32)).unwrap();
 
         assert_eq!(a, b);
         assert_ne!(a, c);
@@ -143,67 +172,67 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let a = FieldElement::new(2, 31).unwrap();
-        let b = FieldElement::new(15, 31).unwrap();
+        let a = FieldElement::new(Integer::from(2i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(15i32), Integer::from(31i32)).unwrap();
 
-        assert_eq!(a + b, FieldElement::new(17, 31).unwrap());
+        assert_eq!(a + b, FieldElement::new(Integer::from(17i32), Integer::from(31i32)).unwrap());
 
-        let a = FieldElement::new(17, 31).unwrap();
-        let b = FieldElement::new(21, 31).unwrap();
+        let a = FieldElement::new(Integer::from(17i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(21i32), Integer::from(31i32)).unwrap();
 
-        assert_eq!(a + b, FieldElement::new(7, 31).unwrap());
+        assert_eq!(a + b, FieldElement::new(Integer::from(7i32), Integer::from(31i32)).unwrap());
     }
 
     #[test]
     fn test_sub() {
-        let a = FieldElement::new(29, 31).unwrap();
-        let b = FieldElement::new(4, 31).unwrap();
+        let a = FieldElement::new(Integer::from(29i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(4i32), Integer::from(31i32)).unwrap();
 
-        assert_eq!(a - b, FieldElement::new(25, 31).unwrap());
+        assert_eq!(a - b, FieldElement::new(Integer::from(25i32), Integer::from(31i32)).unwrap());
 
-        let a = FieldElement::new(15, 31).unwrap();
-        let b = FieldElement::new(30, 31).unwrap();
+        let a = FieldElement::new(Integer::from(15i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(30i32), Integer::from(31i32)).unwrap();
 
-        assert_eq!(a - b, FieldElement::new(16, 31).unwrap());
+        assert_eq!(a - b, FieldElement::new(Integer::from(16i32), Integer::from(31i32)).unwrap());
     }
 
     #[test]
     fn test_neg() {
-        let a = FieldElement::new(9, 19).unwrap();
+        let a = FieldElement::new(Integer::from(9), Integer::from(19)).unwrap();
 
-        assert_eq!(-a, FieldElement::new(10, 19).unwrap());
-        assert_eq!(-a + a, FieldElement::new(0, 19).unwrap());
+        assert_eq!(-a, FieldElement::new(Integer::from(10), Integer::from(19)).unwrap());
+        assert_eq!(-a + a, FieldElement::new(Integer::from(0), Integer::from(19)).unwrap());
     }
 
     #[test]
     fn test_mul() {
-        let a = FieldElement::new(24, 31).unwrap();
-        let b = FieldElement::new(19, 31).unwrap();
+        let a = FieldElement::new(Integer::from(24i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(19i32), Integer::from(31i32)).unwrap();
 
-        assert_eq!(a * b, FieldElement::new(22, 31).unwrap());
+        assert_eq!(a * b, FieldElement::new(Integer::from(22i32), Integer::from(31i32)).unwrap());
     }
 
     #[test]
     fn test_pow() {
-        let a = FieldElement::new(17, 31).unwrap();
-        assert_eq!(a.pow(3), FieldElement::new(15, 31).unwrap());
+        let a = FieldElement::new(Integer::from(17i32), Integer::from(31i32)).unwrap();
+        assert_eq!(a.pow(&Integer::from(3i32)), FieldElement::new(Integer::from(15i32), Integer::from(31i32)).unwrap());
 
-        let a = FieldElement::new(5, 31).unwrap();
-        let b = FieldElement::new(18, 31).unwrap();
-        assert_eq!(a.pow(5) * b, FieldElement::new(16, 31).unwrap());
+        let a = FieldElement::new(Integer::from(5i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(18i32), Integer::from(31i32)).unwrap();
+        assert_eq!(a.pow(&Integer::from(5i32)) * b, FieldElement::new(Integer::from(16i32), Integer::from(31i32)).unwrap());
     }
 
     #[test]
     fn test_div() {
-        let a = FieldElement::new(3, 31).unwrap();
-        let b = FieldElement::new(24, 31).unwrap();
-        assert_eq!(a / b, FieldElement::new(4, 31).unwrap());
+        let a = FieldElement::new(Integer::from(3i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(24i32), Integer::from(31i32)).unwrap();
+        assert_eq!(a / b, FieldElement::new(Integer::from(4i32), Integer::from(31i32)).unwrap());
 
-        let a = FieldElement::new(17, 31).unwrap();
-        assert_eq!(a.pow(-3), FieldElement::new(29, 31).unwrap());
+        let a = FieldElement::new(Integer::from(17i32), Integer::from(31i32)).unwrap();
+        assert_eq!(a.pow(&Integer::from(-3i32)), FieldElement::new(Integer::from(29i32), Integer::from(31i32)).unwrap());
 
-        let a = FieldElement::new(4, 31).unwrap();
-        let b = FieldElement::new(11, 31).unwrap();
-        assert_eq!(a.pow(-4) * b, FieldElement::new(13, 31).unwrap());
+        let a = FieldElement::new(Integer::from(4i32), Integer::from(31i32)).unwrap();
+        let b = FieldElement::new(Integer::from(11i32), Integer::from(31i32)).unwrap();
+        assert_eq!(a.pow(&Integer::from(-4i32)) * b, FieldElement::new(Integer::from(13i32), Integer::from(31i32)).unwrap());
     }
 }
