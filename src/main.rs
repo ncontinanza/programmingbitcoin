@@ -90,4 +90,36 @@ fn main() {
         )
         .unwrap()
     );
+
+    // Working with secp256k1:
+
+    let n = i128::from_str_radix(
+        "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+        16,
+    )
+    .unwrap();
+    let g = Point::new(
+        FieldElement::new(
+            i128::from_str_radix(
+                "0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+                16,
+            )
+            .unwrap(),
+            n,
+        )
+        .unwrap(),
+        FieldElement::new(
+            i128::from_str_radix(
+                "0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
+                16,
+            )
+            .unwrap(),
+            n,
+        )
+        .unwrap(),
+        FieldElement::new(0, 223).unwrap(),
+        FieldElement::new(7, 223).unwrap(),
+    )
+    .unwrap();
+    println!("N * G = {}", n * g);
 }
