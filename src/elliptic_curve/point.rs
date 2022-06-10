@@ -1,4 +1,4 @@
-use std::ops::{ Add, Mul };
+use std::ops::{Add, Mul};
 
 use rug::Integer;
 
@@ -24,7 +24,9 @@ impl Point {
         a: FieldElement,
         b: FieldElement,
     ) -> Result<Point, PointError> {
-        if y.pow(&Integer::from(2i32)) != x.pow(&Integer::from(3i32)) + a * x + b {
+        if y.pow(&Integer::from(2i32))
+            != x.pow(&Integer::from(3i32)) + a.clone() * x.clone() + b.clone()
+        {
             return Err(PointError::PointNotInCurve(format!(
                 "({}, {}) is not on the curve",
                 x, y,
@@ -66,6 +68,11 @@ impl Add for Point {
             rhs.y.as_ref(),
         ) {
             (Some(x1), Some(y1), Some(x2), Some(y2)) => {
+                let x1 = x1.clone();
+                let y1 = y1.clone();
+                let x2 = x2.clone();
+                let y2 = y2.clone();
+
                 if self.a != rhs.a || self.b != rhs.b {
                     panic!(
                         "{}",
@@ -76,7 +83,7 @@ impl Add for Point {
                 let x_sum;
                 let y_sum;
                 if self == rhs {
-                    if *y1 == FieldElement::new(Integer::from(0i32), y1.prime()).unwrap() {
+                    if y1 == FieldElement::new(Integer::from(0i32), y1.clone().prime()).unwrap() {
                         return Point {
                             x: None,
                             y: None,
@@ -84,15 +91,18 @@ impl Add for Point {
                             b: self.b,
                         };
                     }
-                    let slope = (FieldElement::new(Integer::from(3i32), self.a.prime()).unwrap() * x1.pow(&Integer::from(2i32))
-                        + self.a)
-                        / (FieldElement::new(Integer::from(2i32), self.a.prime()).unwrap() * *y1);
-                    x_sum = slope.pow(&Integer::from(2i32)) - *x1 - *x2;
-                    y_sum = slope * (*x1 - x_sum) - *y1;
+                    let slope = (FieldElement::new(Integer::from(3i32), self.a.clone().prime())
+                        .unwrap()
+                        * x1.pow(&Integer::from(2i32))
+                        + self.a.clone())
+                        / (FieldElement::new(Integer::from(2i32), self.a.clone().prime()).unwrap()
+                            * y1.clone());
+                    x_sum = slope.pow(&Integer::from(2i32)) - x1.clone() - x2;
+                    y_sum = slope * (x1 - x_sum.clone()) - y1;
                 } else {
-                    let slope = (*y2 - *y1) / (*x2 - *x1);
-                    x_sum = slope.pow(&Integer::from(2i32)) - *x1 - *x2;
-                    y_sum = slope * (*x1 - x_sum) - *y1;
+                    let slope = (y2 - y1.clone()) / (x2.clone() - x1.clone());
+                    x_sum = slope.pow(&Integer::from(2i32)) - x1.clone() - x2;
+                    y_sum = slope * (x1 - x_sum.clone()) - y1;
                 }
 
                 Point {
@@ -113,14 +123,14 @@ impl Mul<Point> for i128 {
 
     fn mul(self, point: Point) -> Self::Output {
         let mut coef = self;
-        let mut current = point;
+        let mut current = point.clone();
         let mut result = Point::infinity(point.a, point.b);
 
         while coef > 0 {
             if coef % 2 != 0 {
-                result = result + current; // TODO: fix when MulAssign is implemented
+                result = result + current.clone(); // TODO: fix when MulAssign is implemented
             }
-            current = current + current; // TODO: fix when AddAssign is implemented
+            current = current.clone() + current; // TODO: fix when AddAssign is implemented
             coef >>= 1;
         }
         result
@@ -176,16 +186,16 @@ mod tests {
         let b = 7;
 
         let p1 = point(170, 142, a, b, prime).unwrap();
-        assert_eq!(p1 + p1, 2 * p1);
-        assert_eq!(2 * p1 + p1, 3 * p1);
+        assert_eq!(p1.clone() + p1.clone(), 2 * p1.clone());
+        assert_eq!(2 * p1.clone() + p1.clone(), 3 * p1);
     }
 
     fn point(x: i128, y: i128, a: i128, b: i128, prime: i128) -> Result<Point, PointError> {
         Point::new(
-            FieldElement::new(x, prime).unwrap(),
-            FieldElement::new(y, prime).unwrap(),
-            FieldElement::new(a, prime).unwrap(),
-            FieldElement::new(b, prime).unwrap(),
+            FieldElement::new(Integer::from(x), Integer::from(prime)).unwrap(),
+            FieldElement::new(Integer::from(y), Integer::from(prime)).unwrap(),
+            FieldElement::new(Integer::from(a), Integer::from(prime)).unwrap(),
+            FieldElement::new(Integer::from(b), Integer::from(prime)).unwrap(),
         )
     }
 }
