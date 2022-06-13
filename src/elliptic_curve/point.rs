@@ -1,4 +1,7 @@
-use std::ops::{Add, Mul};
+use std::{
+    fmt,
+    ops::{Add, Mul},
+};
 
 use rug::Integer;
 
@@ -48,6 +51,19 @@ impl Point {
             a,
             b,
         }
+    }
+}
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Point({}, {})_{}_{}",
+            self.x.clone().unwrap(),
+            self.y.clone().unwrap(),
+            self.a,
+            self.b
+        )
     }
 }
 
@@ -118,7 +134,7 @@ impl Add for Point {
     }
 }
 
-impl Mul<Point> for i128 {
+impl Mul<Point> for Integer {
     type Output = Point;
 
     fn mul(self, point: Point) -> Self::Output {
@@ -127,7 +143,7 @@ impl Mul<Point> for i128 {
         let mut result = Point::infinity(point.a, point.b);
 
         while coef > 0 {
-            if coef % 2 != 0 {
+            if coef.is_odd() {
                 result = result + current.clone(); // TODO: fix when MulAssign is implemented
             }
             current = current.clone() + current; // TODO: fix when AddAssign is implemented
@@ -186,8 +202,11 @@ mod tests {
         let b = 7;
 
         let p1 = point(170, 142, a, b, prime).unwrap();
-        assert_eq!(p1.clone() + p1.clone(), 2 * p1.clone());
-        assert_eq!(2 * p1.clone() + p1.clone(), 3 * p1);
+        assert_eq!(p1.clone() + p1.clone(), Integer::from(2) * p1.clone());
+        assert_eq!(
+            Integer::from(2) * p1.clone() + p1.clone(),
+            Integer::from(3) * p1
+        );
     }
 
     fn point(x: i128, y: i128, a: i128, b: i128, prime: i128) -> Result<Point, PointError> {

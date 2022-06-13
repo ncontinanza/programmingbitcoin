@@ -27,22 +27,6 @@ impl FieldElement {
         Ok(FieldElement { num, prime })
     }
 
-    /*pub fn pow(&self, exp: &Integer) -> FieldElement {
-        let mut n = exp.rem_euclid(self.prime - 1i32) as u32;
-
-        let mut num = 1;
-
-        while n > 0 {
-            num = (num * self.num).rem_euclid(self.prime);
-            n -= 1;
-        }
-
-        FieldElement {
-            num,
-            prime: self.prime,
-        }
-    }*/
-
     pub fn pow(&self, exp: &Integer) -> FieldElement {
         if self.prime == 1i32 {
             FieldElement {
