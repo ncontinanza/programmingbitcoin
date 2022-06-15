@@ -1,5 +1,3 @@
-use programmingbitcoin::secp256k1::s_256_field::S256Field;
-use programmingbitcoin::secp256k1::s_256_point::S256Point;
 use programmingbitcoin::{elliptic_curve::point::Point, finite_field::field_element::FieldElement};
 use rug::ops::*;
 use rug::Integer;
@@ -167,14 +165,10 @@ fn main() {
     .unwrap();
 
     let p = Integer::from(2i32).pow(256) - Integer::from(2i32).pow(32) - Integer::from(977i32);
-    let a = S256Field::new(Integer::from(0i32), p.clone()).unwrap();
-    let b = S256Field::new(Integer::from(7i32), p.clone()).unwrap();
-    let x = S256Field::new(gx, p.clone()).unwrap();
-    let y = S256Field::new(gy, p).unwrap();
+    let a = FieldElement::new(Integer::from(0i32), p.clone()).unwrap();
+    let b = FieldElement::new(Integer::from(7i32), p.clone()).unwrap();
+    let x = FieldElement::new(gx, p.clone()).unwrap();
+    let y = FieldElement::new(gy, p).unwrap();
 
-    let _s_256_point = S256Point::new(x, y, a, b);
-
-    
-
-
+    let _s_256_point = Point::new(x, y, a, b);
 }

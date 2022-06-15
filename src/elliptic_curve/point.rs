@@ -3,9 +3,11 @@ use std::{
     ops::{Add, Mul},
 };
 
-use rug::Integer;
+use rug::{ops::Pow, Integer};
 
-use crate::finite_field::field_element::FieldElement;
+use crate::{cryptography::signature::Signature, finite_field::field_element::FieldElement};
+
+static N: &str = "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141";
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Point {
@@ -51,6 +53,49 @@ impl Point {
             a,
             b,
         }
+    }
+
+    pub fn g_point() -> Point {
+        let gx = Integer::from_str_radix(
+            "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+            16,
+        )
+        .unwrap();
+        let gy = Integer::from_str_radix(
+            "483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8",
+            16,
+        )
+        .unwrap();
+        let p = Integer::from(2i32).pow(256) - Integer::from(2i32).pow(32) - Integer::from(977i32);
+
+        let x = FieldElement::new(gx, p.clone()).unwrap();
+        let y = FieldElement::new(gy, p.clone()).unwrap();
+        let seven = FieldElement::new(Integer::from(7i32), p.clone()).unwrap();
+        let zero = FieldElement::new(Integer::from(0i32), p).unwrap();
+
+        Point {
+            x: Some(x),
+            y: Some(y),
+            a: zero,
+            b: seven,
+        }
+    }
+
+    pub fn verify(self, z: Integer, sig: Signature) -> bool {
+        let n = Integer::from_str_radix(N, 16).unwrap();
+        let s_inv = sig
+            .clone()
+            .s()
+            .pow_mod(&(n.clone() - Integer::from(2i32)), &n)
+            .unwrap();
+        let u = z * s_inv.clone() % n.clone();
+        let v = sig.clone().r() * s_inv % n;
+        let total = u * Point::g_point() + v * self;
+        total.x.unwrap().num() == sig.r()
+    }
+
+    pub fn x(self) -> Option<FieldElement> {
+        self.x
     }
 }
 

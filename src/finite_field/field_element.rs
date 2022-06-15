@@ -47,6 +47,10 @@ impl FieldElement {
         self.prime
     }
 
+    pub fn num(self) -> Integer {
+        self.num
+    }
+
     fn value_of(&self, value: Integer) -> Integer {
         if value < 0 || value >= self.prime {
             let result = value.div_rem_euc_ref(&self.prime);
